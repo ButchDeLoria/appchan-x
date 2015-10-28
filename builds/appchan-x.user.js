@@ -22,13 +22,13 @@
 // @grant        GM_openInTab
 // @grant        GM_xmlhttpRequest
 // @run-at       document-start
-// @updateURL 	 https://github.com/zixaphir/appchan-x/raw/stable/builds/appchan-x.meta.js
+// @updateURL    https://github.com/zixaphir/appchan-x/raw/stable/builds/appchan-x.meta.js
 // @downloadURL  https://github.com/zixaphir/appchan-x/raw/stable/builds/appchan-x.user.js
 // @icon         data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAElBMVEX///8EZgR8ulSk0oT///8EAgQ1A88mAAAAAXRSTlMAQObYZgAAAIpJREFUeF6t0sENwjAMhWF84N4H6gAYMUBkdQMYwfuvwmstEeD4kl892P0OaaWcpga2/K0SGII1HNBXARgu7veoY3ANd+esgMHZIz85u0EABrbms3pl/bkC1Tn5ihGOfQwqHeZ/FdYdirEMgCG2ZAQWDTL0m9FvjAhcvoGNAK2gZhGYYX9+ZgFm9gaiNmNkMENY4QAAAABJRU5ErkJggg==
 // ==/UserScript==
 
 /*
-* appchan x - Version 2.10.11 - 2015-10-10
+* appchan x - Version 2.10.11 - 2015-10-23
 *
 * Licensed under the MIT license.
 * https://github.com/zixaphir/appchan-x/blob/master/LICENSE
@@ -200,7 +200,8 @@
         'Autoplay': [true, 'Videos begin playing immediately when opened.'],
         'Restart when Opened': [true, 'Restart GIFs and WebMs when you hover over or expand them.'],
         'Show Controls': [true, 'Show controls on videos expanded inline. Turn this off if you want to contract videos by clicking on them.'],
-        'Loop in New Tab': [true, 'Loop videos opened in their own tabs.']
+        'Loop in New Tab': [true, 'Loop videos opened in their own tabs.'],
+        'Add Download Attribute to Filename': [true, 'Adds the Download attribute to the file link above image thumbnails. Useful for download managers like DownThemAll 3.0 that support renaming downloads with the download attribute.']
       },
       'Menu': {
         'Menu': [true, 'Add a drop-down menu to posts.'],
@@ -3540,7 +3541,7 @@
         size *= 1024;
       }
       this.file.sizeInBytes = size;
-      this.file.thumbURL = "" + location.protocol + "i.4cdn.org/" + this.board + "/" + (this.file.URL.match(/(\d+)\./)[1]) + "s.jpg";
+      this.file.thumbURL = "" + location.protocol + "//i.4cdn.org/" + this.board + "/" + (this.file.URL.match(/(\d+)\./)[1]) + "s.jpg";
       this.file.isImage = /(jpg|png|gif)$/i.test(this.file.URL);
       this.file.isVideo = /webm$/i.test(this.file.URL);
       nameNode = $('a', fileText);
@@ -6169,7 +6170,7 @@
           width: data.w,
           MD5: data.md5,
           size: data.fsize,
-          turl: "//" + "i.4cdn.org/" + boardID + "/" + data.tim + "s.jpg",
+          turl: "//i.4cdn.org/" + boardID + "/" + data.tim + "s.jpg",
           theight: data.tn_h,
           twidth: data.tn_w,
           isSpoiler: !!data.spoiler,
@@ -11673,7 +11674,7 @@
         className: 'video-controls'
       });
       $.extend(this.videoControls, {
-        innerHTML: " <a href=\"javascript:;\" title=\"You can also contract the video by dragging it to the left.\">contract</a>"
+        innerHTML: " <a href=\"javascript:;\" title=\"You can also contract the video by dragging it to the left.\">contract</a>"
       });
       Header.addShortcut(this.EAI, true);
       return Post.callbacks.push({
@@ -13439,7 +13440,16 @@
   DownloadLink = {
     init: function() {
       var a, _ref;
-      if (!(((_ref = g.VIEW) === 'index' || _ref === 'thread') && Conf['Menu'] && Conf['Download Link'])) {
+      if ((_ref = g.VIEW) !== 'index' && _ref !== 'thread') {
+        return;
+      }
+      if (Conf['Add Download Attribute to Filename']) {
+        Post.callbacks.push({
+          name: 'DownloadLink',
+          cb: this.node
+        });
+      }
+      if (!(Conf['Menu'] && Conf['Download Link'])) {
         return;
       }
       a = $.el('a', {
@@ -13461,6 +13471,14 @@
           return true;
         }
       });
+    },
+    node: function() {
+      var a;
+      if (!this.file) {
+        return;
+      }
+      a = $('.file-info a', this.file.text) || this.file.text.firstElementChild;
+      return a.download = this.file.name;
     }
   };
 
@@ -15104,6 +15122,9 @@
       Unread.read();
       Unread.update();
       if (Conf['Scroll to Last Read Post']) {
+        if (d.hidden) {
+          $.one(d, 'visibilitychange', Unread.scroll);
+        }
         Unread.scroll();
       }
       $.on(d, 'scroll visibilitychange', Unread.read);
@@ -20454,7 +20475,7 @@
       }
       return g.THEMESTRING = type;
     },
-    features: [['Style', Style], ['Mascots', MascotTools], ['Rice', Rice], ['Announcements', GlobalMessage], ['Polyfill', Polyfill], ['Redirect', Redirect], ['Header', Header], ['Catalog Links', CatalogLinks], ['Settings', Settings], ['Index Generator', Index], ['Disable Autoplay', AntiAutoplay], ['Announcement Hiding', PSAHiding], ['Fourchan thingies', Fourchan], ['Color User IDs', IDColor], ['Highlight by User ID', IDHighlight], ['Custom CSS', CustomCSS], ['Linkify', Linkify], ['Reveal Spoilers', RemoveSpoilers], ['Resurrect Quotes', Quotify], ['Filter', Filter], ['Reply Hiding Buttons', PostHiding], ['Recursive', Recursive], ['Strike-through Quotes', QuoteStrikeThrough], ['Quick Reply', QR], ['Menu', Menu], ['Index Generator (Menu)', Index.menu], ['Report Link', ReportLink], ['Reply Hiding (Menu)', PostHiding.menu], ['Delete Link', DeleteLink], ['Filter (Menu)', Filter.menu], ['Download Link', DownloadLink], ['Labels list', Labels], ['Archive Link', ArchiveLink], ['Quote Inlining', QuoteInline], ['Quote Previewing', QuotePreview], ['Quote Backlinks', QuoteBacklink], ['Quote Markers', QuoteMarkers], ['Anonymize', Anonymize], ['Time Formatting', Time], ['Relative Post Dates', RelativeDates], ['File Info Formatting', FileInfo], ['Fappe Tyme', FappeTyme], ['Gallery', Gallery], ['Gallery (menu)', Gallery.menu], ['Sauce', Sauce], ['Image Expansion', ImageExpand], ['Image Expansion (Menu)', ImageExpand.menu], ['Reveal Spoiler Thumbnails', RevealSpoilers], ['Image Loading', ImageLoader], ['Image Hover', ImageHover], ['Comment Expansion', ExpandComment], ['Thread Expansion', ExpandThread], ['Thread Excerpt', ThreadExcerpt], ['Favicon', Favicon], ['Unread', Unread], ['Quote Threading', QuoteThreading], ['Thread Stats', ThreadStats], ['Thread Updater', ThreadUpdater], ['Thread Watcher', ThreadWatcher], ['Thread Watcher (Menu)', ThreadWatcher.menu], ['Mark New IPs', MarkNewIPs], ['Index Navigation', Nav], ['Keybinds', Keybinds], ['Banner', Banner], ['Navigate', Navigate], ['Flash Features', Flash]]
+    features: [['Style', Style], ['Mascots', MascotTools], ['Rice', Rice], ['Announcements', GlobalMessage], ['Polyfill', Polyfill], ['Redirect', Redirect], ['Header', Header], ['Catalog Links', CatalogLinks], ['Settings', Settings], ['Index Generator', Index], ['Disable Autoplay', AntiAutoplay], ['Announcement Hiding', PSAHiding], ['Fourchan thingies', Fourchan], ['Color User IDs', IDColor], ['Highlight by User ID', IDHighlight], ['Custom CSS', CustomCSS], ['Linkify', Linkify], ['Reveal Spoilers', RemoveSpoilers], ['Resurrect Quotes', Quotify], ['Filter', Filter], ['Reply Hiding Buttons', PostHiding], ['Recursive', Recursive], ['Strike-through Quotes', QuoteStrikeThrough], ['Quick Reply', QR], ['Menu', Menu], ['Index Generator (Menu)', Index.menu], ['Report Link', ReportLink], ['Reply Hiding (Menu)', PostHiding.menu], ['Delete Link', DeleteLink], ['Filter (Menu)', Filter.menu], ['Labels list', Labels], ['Archive Link', ArchiveLink], ['Quote Inlining', QuoteInline], ['Quote Previewing', QuotePreview], ['Quote Backlinks', QuoteBacklink], ['Quote Markers', QuoteMarkers], ['Anonymize', Anonymize], ['Time Formatting', Time], ['Relative Post Dates', RelativeDates], ['File Info Formatting', FileInfo], ['Download Link', DownloadLink], ['Fappe Tyme', FappeTyme], ['Gallery', Gallery], ['Gallery (menu)', Gallery.menu], ['Sauce', Sauce], ['Image Expansion', ImageExpand], ['Image Expansion (Menu)', ImageExpand.menu], ['Reveal Spoiler Thumbnails', RevealSpoilers], ['Image Loading', ImageLoader], ['Image Hover', ImageHover], ['Comment Expansion', ExpandComment], ['Thread Expansion', ExpandThread], ['Thread Excerpt', ThreadExcerpt], ['Favicon', Favicon], ['Unread', Unread], ['Quote Threading', QuoteThreading], ['Thread Stats', ThreadStats], ['Thread Updater', ThreadUpdater], ['Thread Watcher', ThreadWatcher], ['Thread Watcher (Menu)', ThreadWatcher.menu], ['Mark New IPs', MarkNewIPs], ['Index Navigation', Nav], ['Keybinds', Keybinds], ['Banner', Banner], ['Navigate', Navigate], ['Flash Features', Flash]]
   };
 
   Main.init();
